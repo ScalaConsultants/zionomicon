@@ -1,11 +1,11 @@
-import zio.{ExitCode, Task, URIO, ZIO, ZIOAppArgs}
+import zio.{Console, ExitCode, Task, URIO, ZEnv, ZIO, ZIOAppArgs, Chunk}
 
-object Ch2:
+object Ch2 extends zio.ZIOAppDefault:
   object Ex1:
     def readFileZio(file: String): Task[String] =
       val source = scala.io.Source.fromFile(file)
 
-      ZIO.attempt(try source.getLines.mkString finally source.close())
+      ZIO.attempt(try source.getLines.mkString("\n") finally source.close())
 
   object Ex2:
     def writeFileZio(file: String, text: String): Task[Unit] =
@@ -78,10 +78,20 @@ object Ch2:
         self.run(r).fold(_ => that.run(r), Right.apply)
       }
 
-  object Ex10 extends zio.ZIOAppDefault:
-    import Ex1._
+  // Ex 10
+  import Ch2.Ex1.readFileZio
 
-    override def run: URIO[ZIOAppArgs, ExitCode] =
-      getArgs.map(_.map(readFileZio)).exitCode
+  override def run: URIO[ZIOAppArgs & Console, ExitCode] =
+    (for
+      filenames <- getArgs
+      _ <- ZIO.foreachDiscard(filenames) { filename =>
+        for
+          fileContent <- readFileZio(filename)
+          _ <- ZIO.foreachDiscard(fileContent.linesIterator.toList) { line =>
+            Console.printLine(line)
+          }
+        yield ()
+      }
+    yield ()).exitCode
 
 end Ch2
