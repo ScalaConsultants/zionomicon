@@ -6,3 +6,14 @@ object Ex7:
       val (lefts, rights) = in.partitionMap(_.run(r))
       lefts.headOption.toLeft(rights.toList)
     }
+
+  def collectAllShort[R, E, A](in: Iterable[NaiveZIO[R, E, A]]): NaiveZIO[R, E, List[A]] =
+    NaiveZIO { r =>
+      // using `Seq` to avoid `List.:+` (or alternatively `List.init`) thereby reducing overall time complexity by O(n)
+      def loop(remainingIn: Iterable[NaiveZIO[R, E, A]], acc: Either[E, Seq[A]]): Either[E, Seq[A]] =
+        remainingIn.headOption.fold(acc)(_.run(r).flatMap { right =>
+          loop(remainingIn.tail, acc.map(_ :+ right))
+        })
+
+      loop(in, Right(Seq())).map(_.toList)
+    }
