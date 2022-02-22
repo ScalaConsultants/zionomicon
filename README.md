@@ -1,2 +1,2 @@
 # zionomicon
-answers to the Zionomicon book exercises at the end of almost every chapter
+Zionomicon book exercises at the end of some chapters
